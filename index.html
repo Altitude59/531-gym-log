@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#111827" />
+  <title>John's 531 Gym Log</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #334155;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, var(--bg), #020617);
+      color: var(--text);
+      min-height: 100vh;
+      padding: env(safe-area-inset-top) 14px env(safe-area-inset-bottom);
+    }
+    .app { max-width: 760px; margin: 0 auto; }
+    header { padding: 14px 2px 8px; }
+    h1 { margin: 0; font-size: 28px; }
+    .sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+    nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 8px 0;
+      background: rgba(15, 23, 42, .94);
+      backdrop-filter: blur(12px);
+    }
+    button, input, select {
+      font: inherit;
+    }
+    .tab, .btn {
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 10px;
+      font-weight: 650;
+    }
+    .tab.active, .btn.primary { background: var(--accent); color: #052e16; border-color: var(--accent); }
+    .btn.danger { background: transparent; border-color: var(--danger); color: #fecaca; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .card {
+      background: rgba(17, 24, 39, .95);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 12px 0;
+      box-shadow: 0 10px 30px rgba(0,0,0,.22);
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    input, select {
+      width: 100%;
+      color: var(--text);
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .lift-title {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 10px;
+    }
+    .lift-title h2 { margin: 0; font-size: 21px; }
+    .badge {
+      color: #bbf7d0; background: #14532d; border: 1px solid #166534;
+      border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 700;
+    }
+    .set-row {
+      display: grid; grid-template-columns: 1.2fr .8fr .8fr .9fr; gap: 8px;
+      align-items: center; padding: 10px 0; border-top: 1px solid #243044;
+    }
+    .set-row:first-child { border-top: 0; }
+    .set-row strong { font-size: 17px; }
+    .small { font-size: 12px; color: var(--muted); }
+    .stat {
+      background: #0b1220; border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px;
+    }
+    .stat .value { font-size: 23px; font-weight: 800; margin-top: 3px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .actions .btn { flex: 1; min-width: 140px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; border-bottom: 1px solid #243044; padding: 9px 5px; }
+    th { color: var(--muted); }
+    .notice {
+      color: #fde68a; background: #451a03; border: 1px solid #92400e;
+      padding: 11px 12px; border-radius: 12px; font-size: 13px;
+    }
+    .success { color: #bbf7d0; }
+    .hidden { display: none !important; }
+    @media (max-width: 560px) {
+      .grid2, .grid3 { grid-template-columns: 1fr; }
+      .set-row { grid-template-columns: 1fr .8fr .8fr; }
+      .set-row .percent { display:none; }
+      nav { grid-template-columns: repeat(4, 1fr); }
+      .tab { font-size: 12px; padding: 11px 4px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>John's 531 Gym Log</h1>
+    <div class="sub">Wendler-style training calculator and progress log</div>
+  </header>
+
+  <nav>
+    <button class="tab active" data-screen="workout">Workout</button>
+    <button class="tab" data-screen="settings">Settings</button>
+    <button class="tab" data-screen="history">History</button>
+    <button class="tab" data-screen="progress">Progress</button>
+  </nav>
+
+  <section id="workout" class="screen active">
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label for="liftSelect">Lift</label>
+          <select id="liftSelect"></select>
+        </div>
+        <div>
+          <label for="weekSelect">Week</label>
+          <select id="weekSelect">
+            <option value="1">Week 1, 5s</option>
+            <option value="2">Week 2, 3s</option>
+            <option value="3">Week 3, 5/3/1</option>
+            <option value="4">Week 4, Deload</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="lift-title">
+        <h2 id="workoutTitle">Squat</h2>
+        <span class="badge" id="tmBadge">TM 0 lb</span>
+      </div>
+      <div id="setsContainer"></div>
+    </div>
+
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label for="notes">Session notes</label>
+          <input id="notes" placeholder="Optional notes" />
+        </div>
+        <div>
+          <label for="sessionDate">Date</label>
+          <input type="date" id="sessionDate" />
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn primary" id="saveWorkout">Save workout</button>
+      </div>
+      <p id="saveMsg" class="small success"></p>
+    </div>
+  </section>
+
+  <section id="settings" class="screen">
+    <div class="card">
+      <div class="notice">
+        Your starting lifts are configured as estimated one-rep maxes. Training max is set to 90%, with work sets rounded to the nearest 2.5 lb.
+      </div>
+    </div>
+    <div id="liftSettings"></div>
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label for="unit">Units</label>
+          <select id="unit">
+            <option value="lb">Pounds</option>
+            <option value="kg">Kilograms</option>
+          </select>
+        </div>
+        <div>
+          <label for="rounding">Round work sets to nearest</label>
+          <select id="rounding">
+            <option value="5">5</option>
+            <option value="2.5">2.5</option>
+            <option value="1">1</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn primary" id="saveSettings">Save settings</button>
+        <button class="btn" id="advanceCycle">Advance cycle</button>
+      </div>
+      <p class="small">Advance cycle adds 10 lb or 5 kg to squat and deadlift, and 5 lb or 2.5 kg to bench and press.</p>
+    </div>
+  </section>
+
+  <section id="history" class="screen">
+    <div class="card">
+      <div class="lift-title">
+        <h2>Workout history</h2>
+        <button class="btn danger" id="clearHistory">Clear</button>
+      </div>
+      <div style="overflow:auto;">
+        <table>
+          <thead><tr><th>Date</th><th>Lift</th><th>Week</th><th>Top set</th><th>e1RM</th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+      <div class="actions" style="margin-top:12px;">
+        <button class="btn" id="exportCsv">Export CSV</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="progress" class="screen">
+    <div class="card">
+      <h2 style="margin-top:0;">Best estimated 1RM</h2>
+      <div class="grid2" id="progressCards"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin-top:0;">Cycle status</h2>
+      <div id="cycleStatus"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+const LIFTS = [
+  {key:'squat', name:'Squat', lower:true},
+  {key:'bench', name:'Bench Press', lower:false},
+  {key:'deadlift', name:'Deadlift', lower:true},
+  {key:'press', name:'Overhead Press', lower:false}
+];
+
+const DEFAULTS = {
+  unit:'lb',
+  rounding:2.5,
+  cycle:1,
+  lifts:{
+    squat:{oneRM:200, tm:180},
+    bench:{oneRM:155, tm:140},
+    deadlift:{oneRM:265, tm:237.5},
+    press:{oneRM:95, tm:85}
+  },
+  history:[]
+};
+
+let state = loadState();
+
+function loadState(){
+  try {
+    return {...structuredClone(DEFAULTS), ...JSON.parse(localStorage.getItem('gym531') || '{}')};
+  } catch(e){
+    return structuredClone(DEFAULTS);
+  }
+}
+function saveState(){ localStorage.setItem('gym531', JSON.stringify(state)); }
+function roundTo(value, increment){
+  return Math.round(value / increment) * increment;
+}
+function fmt(n){
+  return Number.isInteger(n) ? n.toString() : n.toFixed(1);
+}
+function weekScheme(week){
+  const schemes = {
+    1:[{p:.65,r:'5'},{p:.75,r:'5'},{p:.85,r:'5+'}],
+    2:[{p:.70,r:'3'},{p:.80,r:'3'},{p:.90,r:'3+'}],
+    3:[{p:.75,r:'5'},{p:.85,r:'3'},{p:.95,r:'1+'}],
+    4:[{p:.40,r:'5'},{p:.50,r:'5'},{p:.60,r:'5'}]
+  };
+  return schemes[week];
+}
+function e1rm(weight, reps){
+  if(!weight || !reps) return 0;
+  return weight * (1 + reps/30);
+}
+function todayISO(){
+  const d = new Date();
+  const local = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return local.toISOString().slice(0,10);
+}
+
+function renderLiftSelect(){
+  const s = document.getElementById('liftSelect');
+  s.innerHTML = LIFTS.map(l => `<option value="${l.key}">${l.name}</option>`).join('');
+}
+function renderSettings(){
+  const wrap = document.getElementById('liftSettings');
+  wrap.innerHTML = LIFTS.map(l => {
+    const v = state.lifts[l.key] || {oneRM:0,tm:0};
+    return `<div class="card">
+      <div class="lift-title"><h2>${l.name}</h2><span class="badge">${l.lower?'Lower':'Upper'}</span></div>
+      <div class="grid2">
+        <div>
+          <label>Estimated 1RM</label>
+          <input type="number" inputmode="decimal" min="0" step="0.5" id="${l.key}_1rm" value="${v.oneRM || ''}" placeholder="Example: 225">
+        </div>
+        <div>
+          <label>Training max</label>
+          <input type="number" inputmode="decimal" min="0" step="0.5" id="${l.key}_tm" value="${v.tm || ''}" placeholder="Defaults to 90%">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('unit').value = state.unit;
+  document.getElementById('rounding').value = String(state.rounding);
+}
+function saveSettings(){
+  state.unit = document.getElementById('unit').value;
+  state.rounding = Number(document.getElementById('rounding').value);
+  for(const l of LIFTS){
+    const oneRM = Number(document.getElementById(`${l.key}_1rm`).value || 0);
+    let tm = Number(document.getElementById(`${l.key}_tm`).value || 0);
+    if(!tm && oneRM) tm = roundTo(oneRM * .9, state.rounding);
+    state.lifts[l.key] = {oneRM, tm};
+  }
+  saveState();
+  renderWorkout();
+  renderProgress();
+  alert('Settings saved.');
+}
+function renderWorkout(){
+  const liftKey = document.getElementById('liftSelect').value || 'squat';
+  const week = Number(document.getElementById('weekSelect').value || 1);
+  const lift = LIFTS.find(l => l.key === liftKey);
+  const tm = Number(state.lifts[liftKey]?.tm || 0);
+  document.getElementById('workoutTitle').textContent = `${lift.name}, Week ${week}`;
+  document.getElementById('tmBadge').textContent = `TM ${fmt(tm)} ${state.unit}`;
+
+  const rows = weekScheme(week).map((set, i) => {
+    const target = roundTo(tm * set.p, state.rounding);
+    return `<div class="set-row">
+      <div><strong>Set ${i+1}</strong><div class="small">${set.r} reps</div></div>
+      <div class="percent"><strong>${Math.round(set.p*100)}%</strong><div class="small">of TM</div></div>
+      <div><strong>${fmt(target)}</strong><div class="small">${state.unit}</div></div>
+      <div><input type="number" inputmode="numeric" min="0" id="reps_${i}" placeholder="${set.r.replace('+','')}"></div>
+    </div>`;
+  }).join('');
+  document.getElementById('setsContainer').innerHTML = rows;
+}
+function saveWorkout(){
+  const liftKey = document.getElementById('liftSelect').value;
+  const week = Number(document.getElementById('weekSelect').value);
+  const tm = Number(state.lifts[liftKey]?.tm || 0);
+  const scheme = weekScheme(week);
+  const sets = scheme.map((set,i) => ({
+    percent:set.p,
+    targetReps:set.r,
+    weight:roundTo(tm*set.p, state.rounding),
+    reps:Number(document.getElementById(`reps_${i}`).value || 0)
+  }));
+  const top = sets[2];
+  const record = {
+    id:Date.now(),
+    date:document.getElementById('sessionDate').value || todayISO(),
+    lift:liftKey,
+    week,
+    tm,
+    unit:state.unit,
+    notes:document.getElementById('notes').value.trim(),
+    sets,
+    e1rm:Math.round(e1rm(top.weight, top.reps)*10)/10
+  };
+  state.history.unshift(record);
+  saveState();
+  document.getElementById('saveMsg').textContent = 'Workout saved.';
+  document.getElementById('notes').value = '';
+  renderHistory();
+  renderProgress();
+}
+function renderHistory(){
+  const body = document.getElementById('historyBody');
+  if(!state.history.length){
+    body.innerHTML = `<tr><td colspan="5" class="small">No workouts logged yet.</td></tr>`;
+    return;
+  }
+  body.innerHTML = state.history.map(r => {
+    const lift = LIFTS.find(l => l.key === r.lift)?.name || r.lift;
+    const top = r.sets?.[2] || {};
+    return `<tr>
+      <td>${r.date}</td>
+      <td>${lift}</td>
+      <td>${r.week}</td>
+      <td>${fmt(top.weight||0)} × ${top.reps||0}</td>
+      <td>${r.e1rm ? fmt(r.e1rm) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+function renderProgress(){
+  const wrap = document.getElementById('progressCards');
+  wrap.innerHTML = LIFTS.map(l => {
+    const best = Math.max(0, ...state.history.filter(r=>r.lift===l.key).map(r=>Number(r.e1rm||0)));
+    const tm = Number(state.lifts[l.key]?.tm || 0);
+    return `<div class="stat">
+      <div class="small">${l.name}</div>
+      <div class="value">${best ? fmt(best) : '—'} <span class="small">${state.unit}</span></div>
+      <div class="small">Training max: ${fmt(tm)} ${state.unit}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('cycleStatus').innerHTML = `
+    <div class="stat">
+      <div class="small">Current cycle</div>
+      <div class="value">${state.cycle || 1}</div>
+      <div class="small">Advance after completing your selected cycle structure.</div>
+    </div>`;
+}
+function advanceCycle(){
+  const upper = state.unit === 'lb' ? 5 : 2.5;
+  const lower = state.unit === 'lb' ? 10 : 5;
+  for(const l of LIFTS){
+    state.lifts[l.key].tm = Number(state.lifts[l.key].tm || 0) + (l.lower ? lower : upper);
+  }
+  state.cycle = Number(state.cycle || 1) + 1;
+  saveState();
+  renderSettings();
+  renderWorkout();
+  renderProgress();
+  alert(`Advanced to cycle ${state.cycle}.`);
+}
+function exportCsv(){
+  const header = ['date','lift','week','training_max','set1_weight','set1_reps','set2_weight','set2_reps','set3_weight','set3_reps','estimated_1rm','notes'];
+  const rows = state.history.map(r => [
+    r.date,
+    r.lift,
+    r.week,
+    r.tm,
+    r.sets?.[0]?.weight || '',
+    r.sets?.[0]?.reps || '',
+    r.sets?.[1]?.weight || '',
+    r.sets?.[1]?.reps || '',
+    r.sets?.[2]?.weight || '',
+    r.sets?.[2]?.reps || '',
+    r.e1rm || '',
+    `"${String(r.notes||'').replaceAll('"','""')}"`
+  ]);
+  const csv = [header, ...rows].map(row => row.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '531-workout-log.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.screen).classList.add('active');
+}));
+
+document.getElementById('liftSelect').addEventListener('change', renderWorkout);
+document.getElementById('weekSelect').addEventListener('change', renderWorkout);
+document.getElementById('saveSettings').addEventListener('click', saveSettings);
+document.getElementById('saveWorkout').addEventListener('click', saveWorkout);
+document.getElementById('advanceCycle').addEventListener('click', advanceCycle);
+document.getElementById('exportCsv').addEventListener('click', exportCsv);
+document.getElementById('clearHistory').addEventListener('click', () => {
+  if(confirm('Delete all workout history?')){
+    state.history = [];
+    saveState();
+    renderHistory();
+    renderProgress();
+  }
+});
+
+renderLiftSelect();
+renderSettings();
+document.getElementById('sessionDate').value = todayISO();
+renderWorkout();
+renderHistory();
+renderProgress();
+</script>
+</body>
+</html>
